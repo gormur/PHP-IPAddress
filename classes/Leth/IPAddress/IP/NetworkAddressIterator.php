@@ -43,55 +43,40 @@ class NetworkAddressIterator implements \Iterator
 
 	/**
 	 * Set the pointer of iterator to a first network address
-	 * Implement \Iterator
-	 *
-	 * @return void
 	 */
-	public function rewind()
+	public function rewind() : void
 	{
 		$this->position = $this->network->get_network_start();
 	}
 
 	/**
 	 * Get the value from iterator
-	 * Implement \Iterator
-	 *
-	 * @return IP\Address
 	 */
-	public function current()
+	public function current(): IP\Address
 	{
 		return $this->position;
 	}
 
 	/**
 	 * Get the key from iterator
-	 * Implement \Iterator
-	 *
-	 * @return string
 	 */
-	public function key()
+	public function key(): string
 	{
 		return $this->position->__toString();
 	}
 
 	/**
 	 * Move the pointer of iterator to a next network address
-	 * Implement \Iterator
-	 *
-	 * @return void
 	 */
-	public function next()
+	public function next(): void
 	{
 		$this->position = $this->position->add(1);
 	}
 
 	/**
 	 * Next network address is valid
-	 * Implement \Iterator
-	 *
-	 * @return boolean
 	 */
-	public function valid()
+	public function valid(): bool
 	{
 		return ($this->position->compare_to($this->network->get_network_end()) <= 0);
 	}

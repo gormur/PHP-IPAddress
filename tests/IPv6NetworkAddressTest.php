@@ -42,10 +42,10 @@ class IPv6_NetworkAddress_Test extends TestCase
 	}
 
 	/**
-	 * @expectedException InvalidArgumentException
 	 */
 	public function testSplitBeyondRange()
 	{
+		$this->expectException(InvalidArgumentException::class);
 		$block = IPv6\NetworkAddress::factory('::0/128');
 		$block->split();
 	}

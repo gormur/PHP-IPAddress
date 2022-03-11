@@ -99,10 +99,10 @@ class IP_NetworkAddress_Test extends TestCase
 
 	/**
 	 * @dataProvider providerFactoryThrowsException
-	 * @expectedException \InvalidArgumentException
 	 */
 	public function testFactoryThrowsException($address, $cidr)
 	{
+		$this->expectException(\InvalidArgumentException::class);
 		IP\NetworkAddress::factory($address, $cidr);
 	}
 
@@ -136,11 +136,11 @@ class IP_NetworkAddress_Test extends TestCase
 	}
 
 	/**
-	 * @expectedException \LogicException
 	 * @dataProvider providerUnimplementedException
 	 */
 	public function testUnimplementedException($class, $method)
 	{
+		$this->expectException(\LogicException::class);
 		$class::$method(NULL);
 	}
 
@@ -248,21 +248,8 @@ class IP_NetworkAddress_Test extends TestCase
 	 */
 	public function test_check_IP_version_fail($left, $right)
 	{
-		try
-		{
-			$left->test_check_IP_version($right);
-			$this->fail('An expected exception was not raised.');
-		}
-		catch (\InvalidArgumentException $e) {
-			// We expect this
-		}
-		catch (PHPUnit_Framework_AssertionFailedError $e)
-		{
-			// We expect this
-		}
-		catch (Exception $e) {
-			$this->fail('An unexpected exception was raised.' . $e->getMessage());
-		}
+		$this->expectException(\InvalidArgumentException::class);
+		$left->test_check_IP_version($right);
 	}
 
 	/**
@@ -270,17 +257,11 @@ class IP_NetworkAddress_Test extends TestCase
 	 */
 	public function test_check_IP_version($a4, $b4, $a6, $b6)
 	{
-		try
-		{
-			$a4->test_check_IP_version($b4);
-			$b4->test_check_IP_version($a4);
+		$a4->test_check_IP_version($b4);
+		$b4->test_check_IP_version($a4);
 
-			$a6->test_check_IP_version($b6);
-			$b6->test_check_IP_version($a6);
-		}
-		catch (Exception $e) {
-			$this->fail('An unexpected exception was raised.' . $e->getMessage());
-		}
+		$a6->test_check_IP_version($b6);
+		$b6->test_check_IP_version($a6);
 	}
 
 	public function providerSubnets()

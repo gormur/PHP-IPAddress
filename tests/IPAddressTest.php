@@ -60,11 +60,11 @@ class IP_Address_Test extends TestCase
 	}
 
 	/**
-	 * @expectedException \InvalidArgumentException
 	 * @dataProvider providerFactoryException
 	 */
 	public function testFactoryException($input)
 	{
+		$this->expectException(\InvalidArgumentException::class);
 		IP\Address::factory($input);
 	}
 

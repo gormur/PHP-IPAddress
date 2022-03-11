@@ -75,11 +75,11 @@ class IPv6_Address_Test extends TestCase
 	}
 
 	/**
-	 * @expectedException InvalidArgumentException
 	 * @dataProvider providerFormatException
 	 */
 	public function testFormatException($input, $mode)
 	{
+		$this->expectException(InvalidArgumentException::class);
 		$instance = IPv6\Address::factory($input);
 		echo $instance->format($mode);
 	}
@@ -100,11 +100,11 @@ class IPv6_Address_Test extends TestCase
 	}
 
 	/**
-	 * @expectedException InvalidArgumentException
 	 * @dataProvider providerFactoryException
 	 */
 	public function testFactoryException($input)
 	{
+		$this->expectException(InvalidArgumentException::class);
 		IPv6\Address::factory($input);
 	}
 

@@ -564,10 +564,8 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	/**
 	 * Get iterator for this network
 	 * Implement \IteratorAggregate
-	 *
-	 * @return NetworkAddressIterator
 	 */
-	public function getIterator()
+	public function getIterator(): NetworkAddressIterator
 	{
 		return new NetworkAddressIterator($this);
 	}
@@ -587,10 +585,8 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	/**
 	 * Get count addresses in this network
 	 * Implement \Countable
-	 *
-	 * @return integer
 	 */
-	public function count()
+	public function count(): int
 	{
 		return $this->get_NetworkAddress_count();
 	}

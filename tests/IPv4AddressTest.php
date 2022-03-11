@@ -82,21 +82,21 @@ class IPv4_Address_Test extends TestCase
 	}
 
 	/**
-	 * @expectedException InvalidArgumentException
 	 * @dataProvider providerFormatException
 	 */
 	public function testFormatException($input, $mode)
 	{
+		$this->expectException(InvalidArgumentException::class);
 		$instance = IPv4\Address::factory($input);
 		echo $instance->format($mode);
 	}
 
 	/**
-	 * @expectedException InvalidArgumentException
 	 * @dataProvider providerFactoryException
 	 */
 	public function testFactoryException($input)
 	{
+		$this->expectException(InvalidArgumentException::class);
 		IPv4\Address::factory($input);
 	}
 
@@ -239,20 +239,16 @@ class IPv4_Address_Test extends TestCase
 		$this->assertFalse(isset($ip[4]));
 	}
 
-	/**
-	 * @expectedException \LogicException
-	 */
 	public function testArrayAccessSet()
 	{
+		$this->expectException(\LogicException::class);
 		$ip = IPv4\Address::factory('10.250.30.40');
 		$ip[0] = 0;
 	}
 
-	/**
-	 * @expectedException \LogicException
-	 */
 	public function testArrayAccessUnset()
 	{
+		$this->expectException(\LogicException::class);
 		$ip = IPv4\Address::factory('10.250.30.40');
 		unset($ip[0]);
 	}

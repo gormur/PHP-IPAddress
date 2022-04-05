@@ -13,25 +13,25 @@ class IP_Address_Test extends TestCase
 
 	public function providerFactory()
 	{
-		return array(
-			array('IPv4\\Address', '127.0.0.1',   '127.000.000.001',   '127.0.0.1'),
-			array('IPv4\\Address', IPv4\Address::factory('127.0.0.1'),   '127.000.000.001',   '127.0.0.1'),
-			array('IPv4\\Address', '127.0.0.0',   '127.000.000.000',   '127.0.0.0'),
-			array('IPv4\\Address', '127.0.0.2',   '127.000.000.002',   '127.0.0.2'),
-			array('IPv4\\Address', '192.168.1.1', '192.168.001.001', '192.168.1.1'),
-			array('IPv4\\Address', '192.168.2.1', '192.168.002.001', '192.168.2.1'),
-			array('IPv4\\Address', '192.168.1.2', '192.168.001.002', '192.168.1.2'),
-			array('IPv4\\Address', '10.0.0.2',    '010.000.000.002',    '10.0.0.2'),
-			array('IPv4\\Address', '10.0.0.1',    '010.000.000.001',    '10.0.0.1'),
-			array('IPv4\\Address', 257,           '000.000.001.001',     '0.0.1.1'),
+		return [
+			['IPv4\\Address', '127.0.0.1',   '127.000.000.001',   '127.0.0.1'],
+			['IPv4\\Address', IPv4\Address::factory('127.0.0.1'),   '127.000.000.001',   '127.0.0.1'],
+			['IPv4\\Address', '127.0.0.0',   '127.000.000.000',   '127.0.0.0'],
+			['IPv4\\Address', '127.0.0.2',   '127.000.000.002',   '127.0.0.2'],
+			['IPv4\\Address', '192.168.1.1', '192.168.001.001', '192.168.1.1'],
+			['IPv4\\Address', '192.168.2.1', '192.168.002.001', '192.168.2.1'],
+			['IPv4\\Address', '192.168.1.2', '192.168.001.002', '192.168.1.2'],
+			['IPv4\\Address', '10.0.0.2',    '010.000.000.002',    '10.0.0.2'],
+			['IPv4\\Address', '10.0.0.1',    '010.000.000.001',    '10.0.0.1'],
+			['IPv4\\Address', 257,           '000.000.001.001',     '0.0.1.1'],
 
-			array('IPv6\\Address', new \Math_BigInteger(257),                  '0000:0000:0000:0000:0000:0000:0000:0101', '::101'),
-			array('IPv6\\Address',                                     '::1', '0000:0000:0000:0000:0000:0000:0000:0001', '::1'),
-			array('IPv6\\Address',              IPv6\Address::factory('::1'), '0000:0000:0000:0000:0000:0000:0000:0001', '::1'),
-			array('IPv6\\Address', '0000:0000:0000:0000:0000:0000:0000:0001', '0000:0000:0000:0000:0000:0000:0000:0001', '::1'),
-			array('IPv6\\Address',               'fe80::62fb:42ff:feeb:727c', 'fe80:0000:0000:0000:62fb:42ff:feeb:727c', 'fe80::62fb:42ff:feeb:727c'),
-			array('IPv6\\Address',               'fc00:1234::e0',             'fc00:1234:0000:0000:0000:0000:0000:00e0', 'fc00:1234::e0'),
-		);
+			['IPv6\\Address', new Math_BigInteger(257),                  '0000:0000:0000:0000:0000:0000:0000:0101', '::101'],
+			['IPv6\\Address',                                     '::1', '0000:0000:0000:0000:0000:0000:0000:0001', '::1'],
+			['IPv6\\Address',              IPv6\Address::factory('::1'), '0000:0000:0000:0000:0000:0000:0000:0001', '::1'],
+			['IPv6\\Address', '0000:0000:0000:0000:0000:0000:0000:0001', '0000:0000:0000:0000:0000:0000:0000:0001', '::1'],
+			['IPv6\\Address',               'fe80::62fb:42ff:feeb:727c', 'fe80:0000:0000:0000:62fb:42ff:feeb:727c', 'fe80::62fb:42ff:feeb:727c'],
+			['IPv6\\Address',               'fc00:1234::e0',             'fc00:1234:0000:0000:0000:0000:0000:00e0', 'fc00:1234::e0'],
+		];
 	}
 
 	/**
@@ -40,7 +40,7 @@ class IP_Address_Test extends TestCase
 	public function testFactory($expected_class, $input, $full, $compact)
 	{
 		$expected_class = 'Leth\\IPAddress\\'.$expected_class;
-		$instances = array(IP\Address::factory($input), $expected_class::factory($input));
+		$instances = [IP\Address::factory($input), $expected_class::factory($input)];
 
 		foreach ($instances as $instance) {
 			$this->assertNotNull($instance);
@@ -52,11 +52,11 @@ class IP_Address_Test extends TestCase
 
 	public function providerFactoryException()
 	{
-		return array(
-			array('cake'),
-			array('12345'),
-			array('-12345'),
-		);
+		$data = [];
+		$data[] = ['cake'];
+		$data[] = ['12345'];
+		$data[] = ['-12345'];
+		return $data;
 	}
 
 	/**
@@ -64,20 +64,20 @@ class IP_Address_Test extends TestCase
 	 */
 	public function testFactoryException($input)
 	{
-		$this->expectException(\InvalidArgumentException::class);
+		$this->expectException(InvalidArgumentException::class);
 		IP\Address::factory($input);
 	}
 
 	public function providerCompare()
 	{
-		return array(
-			array('127.0.0.1', '127.0.0.1', 0),
-			array('127.0.0.0', '127.0.0.1', -1),
-			array('127.0.0.0', '127.0.0.2', -1),
-			array('127.0.0.1', '127.0.0.2', -1),
-			array('127.0.0.2', '127.0.0.1', 1),
-			array('10.0.0.1',  '127.0.0.2', -1)
-		);
+		$data = [];
+		$data[] = ['127.0.0.1', '127.0.0.1', 0];
+		$data[] = ['127.0.0.0', '127.0.0.1', -1];
+		$data[] = ['127.0.0.0', '127.0.0.2', -1];
+		$data[] = ['127.0.0.1', '127.0.0.2', -1];
+		$data[] = ['127.0.0.2', '127.0.0.1', 1];
+		$data[] = ['10.0.0.1',  '127.0.0.2', -1];
+		return $data;
 	}
 
 	/**

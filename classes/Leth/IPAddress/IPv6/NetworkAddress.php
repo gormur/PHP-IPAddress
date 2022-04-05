@@ -17,6 +17,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 namespace Leth\IPAddress\IPv6;
+
+use \Leth\IPAddress\IP;
+use \Leth\IPAddress\IPv4;
 use \Leth\IPAddress\IPv6;
 
 class NetworkAddress extends \Leth\IPAddress\IP\NetworkAddress
@@ -24,9 +27,9 @@ class NetworkAddress extends \Leth\IPAddress\IP\NetworkAddress
 	const IP_VERSION = 6;
 	const MAX_SUBNET = 128;
 
-	public static function generate_subnet_mask($subnet)
+	public static function generate_subnet_mask(int $subnet): IP\Address
 	{
-		$masks = array();
+		$masks = [];
 		for ($i=1; $i <= 4; $i++)
 		{
 			// left shift operates over arch-specific integer sizes,
@@ -48,10 +51,9 @@ class NetworkAddress extends \Leth\IPAddress\IP\NetworkAddress
 	/**
 	 * Gets the Global subnet mask for this IP Protocol
 	 *
-	 * @return IP\Address An IP Address representing the mask.
 	 * @author Marcus Cobden
 	 */
-	public static function get_global_netmask()
+	public static function get_global_netmask(): IP\Address
 	{
 		return static::generate_subnet_mask(static::MAX_SUBNET);
 	}

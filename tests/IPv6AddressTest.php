@@ -4,7 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 class TestingIPv6_Address extends IPv6\Address
 {
-	public static function factory($address)
+	public static function factory(mixed $address): IPv6\Address
 	{
 		return new TestingIPv6_Address($address);
 	}
@@ -26,28 +26,33 @@ class IPv6_Address_Test extends TestCase
 
 	public function providerFactory()
 	{
-		return array(
-			array(
-				'::1',
-				'::1',
-				'0:0:0:0:0:0:0:1',
-				'0000:0000:0000:0000:0000:0000:0000:0001'),
-			array(
-				1,
-				'::1',
-				'0:0:0:0:0:0:0:1',
-				'0000:0000:0000:0000:0000:0000:0000:0001'),
-			array(
-				'fe80::226:bbff:fe14:7372',
-				'fe80::226:bbff:fe14:7372',
-				'fe80:0:0:0:226:bbff:fe14:7372',
-				'fe80:0000:0000:0000:0226:bbff:fe14:7372'),
-			array(
-				'::ffff:127:0:0:1',
-				'::ffff:127:0:0:1',
-				'0:0:0:ffff:127:0:0:1',
-				'0000:0000:0000:ffff:0127:0000:0000:0001'),
-		);
+		$data = [];
+		$data[] = [
+			'::1',
+			'::1',
+			'0:0:0:0:0:0:0:1',
+			'0000:0000:0000:0000:0000:0000:0000:0001'
+		];
+		$data[] = [
+			1,
+			'::1',
+			'0:0:0:0:0:0:0:1',
+			'0000:0000:0000:0000:0000:0000:0000:0001'
+		];
+		$data[] = [
+			'fe80::226:bbff:fe14:7372',
+			'fe80::226:bbff:fe14:7372',
+			'fe80:0:0:0:226:bbff:fe14:7372',
+			'fe80:0000:0000:0000:0226:bbff:fe14:7372'
+		];
+		$data[] = [
+			'::ffff:127:0:0:1',
+			'::ffff:127:0:0:1',
+			'0:0:0:ffff:127:0:0:1',
+			'0000:0000:0000:ffff:0127:0000:0000:0001'
+		];
+
+		return $data;
 	}
 
 	/**
@@ -65,12 +70,13 @@ class IPv6_Address_Test extends TestCase
 
 	public function providerFormatException()
 	{
-		$bad_mode = -1;
 		$data = static::providerFactory();
-		foreach ($data as $i => $entry) {
-			$data[$i] = array($entry[0], $bad_mode);
-		}
-
+		array_map(
+			function ($entry) {
+				return [$entry[0], $bad_mode = -1];
+			},
+			$data
+		);
 		return $data;
 	}
 
@@ -84,19 +90,23 @@ class IPv6_Address_Test extends TestCase
 		echo $instance->format($mode);
 	}
 
+	/**
+	 * Provide strings that may look like an ip but
+	 * is invalid in some way.
+	 */
 	public function providerFactoryException()
 	{
-		return array(
-			array('256.0.0.1'),
-			array('127.-1.0.1'),
-			array('127.128.256.1'),
-			array('cake'),
-			array('12345'),
-			array('-12345'),
-			array('0000:0000:0000:ffff:0127:0000:0000:000g'),
-			array('000000000000ffff0127000000000001'),
-			array(array()),
-		);
+		$data = [];
+		$data[] = ['256.0.0.1'];
+		$data[] = ['127.-1.0.1'];
+		$data[] = ['127.128.256.1'];
+		$data[] = ['cake'];
+		$data[] = ['12345'];
+		$data[] = ['-12345'];
+		$data[] = ['0000:0000:0000:ffff:0127:0000:0000:000g'];
+		$data[] = ['000000000000ffff0127000000000001'];
+		$data[] = [[]];
+		return $data;
 	}
 
 	/**
@@ -110,22 +120,15 @@ class IPv6_Address_Test extends TestCase
 
 	public function providerAddSubtract()
 	{
-		$data = array(
-			array('::'  , 0, '::' ),
-			array('::1' , 0, '::1' ),
-			array('::1' , 1, '::2' ),
-			array('::1' , 2, '::3' ),
-			array('::5' , 6, '::b' ),
-			array('::10', 1, '::11' ),
-			array('::10', new \Math_BigInteger(1), '::11' ),
-			array('::10', new \Math_BigInteger(2), '::12' ),
-		);
-
-		for ($i=0; $i < count($data); $i++)
-		{
-			$data[$i][0] = IPv6\Address::factory($data[$i][0]);
-			$data[$i][2] = IPv6\Address::factory($data[$i][2]);
-		}
+		$data = [];
+		$data[] = [IPv6\Address::factory('::')  , 0, IPv6\Address::factory('::' )];
+		$data[] = [IPv6\Address::factory('::1') , 0, IPv6\Address::factory('::1' )];
+		$data[] = [IPv6\Address::factory('::1') , 1, IPv6\Address::factory('::2' )];
+		$data[] = [IPv6\Address::factory('::1') , 2, IPv6\Address::factory('::3' )];
+		$data[] = [IPv6\Address::factory('::5') , 6, IPv6\Address::factory('::b' )];
+		$data[] = [IPv6\Address::factory('::10'), 1, IPv6\Address::factory('::11' )];
+		$data[] = [IPv6\Address::factory('::10'), new Math_BigInteger(1), IPv6\Address::factory('::11' )];
+		$data[] = [IPv6\Address::factory('::10'), new Math_BigInteger(2), IPv6\Address::factory('::12' )];
 		return $data;
 	}
 
@@ -142,20 +145,13 @@ class IPv6_Address_Test extends TestCase
 
 	public function providerCompareTo()
 	{
-		$data = array(
-			array('::', '::', 0),
-			array('::1', '::1', 0),
-			array('::1', '::2', -1),
-			array('::2', '::1', 1),
-			array('::f', '::1', 1),
-			array('::a', '::b', -1),
-		);
-
-		for ($i=0; $i < count($data); $i++){
-			$data[$i][0] = IPv6\Address::factory($data[$i][0]);
-			$data[$i][1] = IPv6\Address::factory($data[$i][1]);
-		}
-		return $data;
+		$data = [];
+		$data[] = [IPv6\Address::factory('::' ), IPv6\Address::factory('::'),  0];
+		$data[] = [IPv6\Address::factory('::1'), IPv6\Address::factory('::1'), 0];
+		$data[] = [IPv6\Address::factory('::1'), IPv6\Address::factory('::2'), -1];
+		$data[] = [IPv6\Address::factory('::2'), IPv6\Address::factory('::1'), 1];
+		$data[] = [IPv6\Address::factory('::f'), IPv6\Address::factory('::1'), 1];
+		$data[] = [IPv6\Address::factory('::a'), IPv6\Address::factory('::b'), -1];
 	}
 
 	/**
@@ -168,13 +164,12 @@ class IPv6_Address_Test extends TestCase
 
 	public function providerBitwise()
 	{
-		$data = array(
+		$data = [];
 			//     OP1    OP2    AND    OR     XOR     NOT
-			array('::1', '::1', '::1', '::1', '::0', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe'),
-			array('::' , '::1', '::0', '::1', '::1', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'),
-			array('::1', '::' , '::0', '::1', '::1', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe'),
-			array('::' , '::' , '::0', '::0', '::0', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'),
-		);
+		$data[] = ['::1', '::1', '::1', '::1', '::0', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe'];
+		$data[] = ['::' , '::1', '::0', '::1', '::1', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'];
+		$data[] = ['::1', '::' , '::0', '::1', '::1', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe'];
+		$data[] = ['::' , '::' , '::0', '::0', '::0', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'];
 
 		for ($i=0; $i < count($data); $i++) {
 			for ($j=0; $j < 6; $j++) {
@@ -222,8 +217,9 @@ class IPv6_Address_Test extends TestCase
 	//
 	// public function provider_as_IPv4\Address()
 	// {
-	// 	return array(
-	// 		array('0000:0000:0000:ffff:0127:0000:0000:0001', '127.0.0.1'),
+	// 	$data = [];
+	// 	$data[] = ['0000:0000:0000:ffff:0127:0000:0000:0001', '127.0.0.1'];
+	// return $data;
 	// 	);
 	// }
 	//
@@ -256,8 +252,13 @@ class IPv6_Address_Test extends TestCase
 		$this->assertEquals(1, $ip->get_octet(1));
 		$this->assertEquals(0x10, $ip->get_octet(10));
 		$this->assertEquals(0xFE, $ip->get_octet(15));
+	}
 
-		$this->assertNull($ip->get_octet(16));
+	public function testGetOctetWithTooLargeOctetNumber16()
+	{
+		$ip = IPv6\Address::factory('0001:0002:aaaa:1234:abcd:1000:2020:fffe');
+		$this->expectException(InvalidArgumentException::class);
+		$ip->get_octet(16);
 	}
 
 	public function testMappedIPv4()
@@ -282,40 +283,41 @@ class IPv6_Address_Test extends TestCase
 		$ip = IPv6\Address::factory('0001:0002:aaaa:1234:abcd:1000:2020:fffe');
 		$this->assertEquals(0x12, $ip[-10]);
 		$this->assertEquals(0x10, $ip[10]);
+	}
 
-		$this->assertNull($ip[16]);
+	public function testArrayAccessWithOctetOutOfRange16()
+	{
+		$ip = IPv6\Address::factory('0001:0002:aaaa:1234:abcd:1000:2020:fffe');
+		$this->expectException(InvalidArgumentException::class);
+		$ip[16];
 	}
 
 	/**
-	 * @return array
 	 */
-	public function providerPadIps()
+	public function providerPadIps(): array
 	{
-		return array(
-			array('::', '0000:0000:0000:0000:0000:0000:0000:0000'),
-			array('::fff', '0000:0000:0000:0000:0000:0000:0000:0fff'),
-			array('::ff:fff', '0000:0000:0000:0000:0000:0000:00ff:0fff'),
-			array('::f:ff:fff', '0000:0000:0000:0000:0000:000f:00ff:0fff'),
-			array('fff::', '0fff:0000:0000:0000:0000:0000:0000:0000'),
-			array('fff:ff::', '0fff:00ff:0000:0000:0000:0000:0000:0000'),
-			array('fff:ff:f::', '0fff:00ff:000f:0000:0000:0000:0000:0000'),
-			array('2001:630:d0::', '2001:0630:00d0:0000:0000:0000:0000:0000'),
-			array('f:f:f:f:f:f:f:f', '000f:000f:000f:000f:000f:000f:000f:000f'),
-			array('fff::fff', '0fff:0000:0000:0000:0000:0000:0000:0fff'),
-			array('fff:0000:bb::aa:0000:fff', '0fff:0000:00bb:0000:0000:00aa:0000:0fff'),
-			// not need pad
-			array('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'),
-			array('0000:0000:0000:0000:0000:0000:0000:0000', '0000:0000:0000:0000:0000:0000:0000:0000'),
-		);
+		$data = [];
+		$data[] = ['::', '0000:0000:0000:0000:0000:0000:0000:0000'];
+		$data[] = ['::fff', '0000:0000:0000:0000:0000:0000:0000:0fff'];
+		$data[] = ['::ff:fff', '0000:0000:0000:0000:0000:0000:00ff:0fff'];
+		$data[] = ['::f:ff:fff', '0000:0000:0000:0000:0000:000f:00ff:0fff'];
+		$data[] = ['fff::', '0fff:0000:0000:0000:0000:0000:0000:0000'];
+		$data[] = ['fff:ff::', '0fff:00ff:0000:0000:0000:0000:0000:0000'];
+		$data[] = ['fff:ff:f::', '0fff:00ff:000f:0000:0000:0000:0000:0000'];
+		$data[] = ['2001:630:d0::', '2001:0630:00d0:0000:0000:0000:0000:0000'];
+		$data[] = ['f:f:f:f:f:f:f:f', '000f:000f:000f:000f:000f:000f:000f:000f'];
+		$data[] = ['fff::fff', '0fff:0000:0000:0000:0000:0000:0000:0fff'];
+		$data[] = ['fff:0000:bb::aa:0000:fff', '0fff:0000:00bb:0000:0000:00aa:0000:0fff'];
+		// not need pad
+		$data[] = ['ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'];
+		$data[] = ['0000:0000:0000:0000:0000:0000:0000:0000', '0000:0000:0000:0000:0000:0000:0000:0000'];
+		return $data;
 	}
 
 	/**
 	 * @dataProvider providerPadIps
-	 *
-	 * @param string $actual
-	 * @param string $expected
 	 */
-	public function testPad($actual, $expected)
+	public function testPad(string $actual, string $expected)
 	{
 		$this->assertEquals($expected, IPv6\Address::pad($actual));
 	}

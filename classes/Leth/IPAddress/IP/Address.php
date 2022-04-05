@@ -17,7 +17,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 namespace Leth\IPAddress\IP;
+
+use InvalidArgumentException;
 use \Leth\IPAddress\IP, \Leth\IPAddress\IPv4, \Leth\IPAddress\IPv6;
+use Math_BigInteger;
 
 /**
  * An abstract representation of an IP Address.
@@ -32,17 +35,13 @@ abstract class Address implements \ArrayAccess
 
 	/**
 	 * Internal representation of the address. Format may vary.
-	 * @var mixed
 	 */
-	protected $address;
+	protected mixed $address;
 
 	/**
-	 * Create an IP address object from the supplied address.
-	 *
-	 * @param string $address The address to represent.
-	 * @return IP\Address An instance of a subclass of IP\Address; either IPv4\Address or IPv6\Address
+	 * Create an IP address object from the supplied address either IPv4\Address or IPv6\Address
 	 */
-	public static function factory($address)
+	public static function factory(mixed $address): IP\Address
 	{
 		if ($address instanceof IP\Address)
 		{
@@ -52,7 +51,7 @@ abstract class Address implements \ArrayAccess
 		{
 			return IPv4\Address::factory($address);
 		}
-		elseif ($address instanceof \Math_BigInteger OR (is_string($address) AND filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)))
+		elseif ($address instanceof Math_BigInteger OR (is_string($address) AND filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)))
 		{
 			return IPv6\Address::factory($address);
 		}
@@ -63,24 +62,18 @@ abstract class Address implements \ArrayAccess
 	}
 
 	/**
-	 * Compare 2 IP Address objects.
+	 * Compare two IP Address objects.
 	 *
 	 * This method is a wrapper for the compare_to method and is useful in callback situations, e.g.
-	 * usort($addresses, array('IP\Address', 'compare'));
-	 *
-	 * @param IP\Address $a The left hand side of the comparison.
-	 * @param IP\Address $b The right hand side of the comparison.
-	 * @return int The result of the comparison.
+	 * usort($addresses, ['IP\Address', 'compare']);
 	 */
-	public static function compare(IP\Address $a, IP\Address $b)
+	public static function compare(IP\Address $a, IP\Address $b): int
 	{
 		return $a->compare_to($b);
 	}
 
 	/**
 	 * Create a new IP Address object.
-	 *
-	 * @param string $address The address to represent.
 	 */
 	protected function __construct($address)
 	{
@@ -89,63 +82,43 @@ abstract class Address implements \ArrayAccess
 
 	/**
 	 * Add the given value to this address.
-	 *
-	 * @param integer|\Math_BigInteger $value
-	 * @return IP\Address An address representing the result of the operation.
 	 */
-	public abstract function add($value);
+	public abstract function add(int|Math_BigInteger $value): IP\Address;
 
 	/**
 	 * Subtract the given value from this address.
-	 *
-	 * @param integer|\Math_BigInteger $value
-	 * @return IP\Address An address representing the result of the operation.
 	 */
-	public abstract function subtract($value);
+	public abstract function subtract(int|Math_BigInteger $value): IP\Address;
 
 	/**
 	 * Compute the bitwise AND of this address and another.
-	 *
-	 * @param IP\Address $other The other operand.
-	 * @return IP\Address An address representing the result of the operation.
 	 */
-	public abstract function bitwise_and(IP\Address $other);
+	public abstract function bitwise_and(IP\Address $other): IP\Address;
 
 	/**
 	 * Compute the bitwise OR of this address and another.
-	 *
-	 * @param IP\Address $other The other operand.
-	 * @return IP\Address An address representing the result of the operation.
 	 */
-	public abstract function bitwise_or(IP\Address $other);
+	public abstract function bitwise_or(IP\Address $other): IP\Address;
 
 	/**
 	 * Compute the bitwise XOR (Exclusive OR) of this address and another.
-	 *
-	 * @param IP\Address $other The other operand.
-	 * @return IP\Address An address representing the result of the operation.
 	 */
-	public abstract function bitwise_xor(IP\Address $other);
+	public abstract function bitwise_xor(IP\Address $other): IP\Address;
 
 	/**
 	 * Compute the bitwise NOT of this address.
-	 *
-	 * @return IP\Address An address representing the result of the operation.
 	 */
-	public abstract function bitwise_not();
+	public abstract function bitwise_not(): IP\Address;
 
 	/**
 	 * Compare this IP Address with another.
-	 *
-	 * @param IP\Address $other The instance to compare to.
-	 * @return int The result of the comparison.
+	 * Suitable to use as callback for sorting functions like usort.
+	 * Returns -1, 0 or 1
 	 */
-	public abstract function compare_to(IP\Address $other);
+	public abstract function compare_to(IP\Address $other): int;
 
 	/**
 	 * Convert this object to a string representation
-	 *
-	 * @return string This IP address expressed as a string.
 	 */
 	public function __toString()
 	{
@@ -154,37 +127,33 @@ abstract class Address implements \ArrayAccess
 
 	/**
 	 * Return the string representation of the address
-	 *
-	 * @return string This IP address expressed as a string.
 	 */
-	public abstract function format($mode);
+	public abstract function format($mode): string;
 
 	/**
 	 * Check that this instance and the supplied instance are of the same class.
 	 *
-	 * @param IP\Address $other The object to check.
 	 * @throws \InvalidArgumentException if objects are of the same class.
 	 */
 	protected function check_types(IP\Address $other)
 	{
-		if (get_class($this) != get_class($other))
-			throw new \InvalidArgumentException('Incompatible types.');
+		if (get_class($this) != get_class($other)) {
+			throw new InvalidArgumentException('Incompatible types.');
+		}
 	}
 
 	/**
 	 * Get the specified octet from this address.
-	 *
-	 * @param integer $number
-	 * @return integer An octet value the result of the operation.
 	 */
-	public function get_octet($number)
+	public function get_octet(int $number): int
 	{
 		$address = unpack("C*", $this->address);
 		$index = (($number >= 0) ? $number : count($address) + $number);
 		$index++;
-		if (!isset($address[$index]))
-			//throw new \InvalidArgumentException("The specified octet out of range");
-			return NULL;
+		if (!isset($address[$index])) {
+			throw new InvalidArgumentException("The specified octet ({$number})out of range");
+		}
+
 		return $address[$index];
 	}
 
@@ -193,7 +162,12 @@ abstract class Address implements \ArrayAccess
 	 */
 	public function offsetExists(mixed $offset): bool
 	{
-		return ($this->get_octet($offset) != NULL);
+		try {
+			$this->get_octet($offset);
+		} catch (InvalidArgumentException $e) {
+			return false;
+		}
+		return true;
 	}
 
 	/**

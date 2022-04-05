@@ -17,7 +17,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 namespace Leth\IPAddress\IPv4;
+
+use InvalidArgumentException;
 use \Leth\IPAddress\IP, \Leth\IPAddress\IPv4, \Leth\IPAddress\IPv6;
+use Math_BigInteger;
 
 class Address extends IP\Address
 {
@@ -25,7 +28,7 @@ class Address extends IP\Address
 	const MAX_IP = '255.255.255.255';
 	const FORMAT_INTEGER = 3;
 
-	public static function factory($address)
+	public static function factory(mixed $address): IP\Address
 	{
 		if ($address instanceof IPv4\Address)
 		{
@@ -35,14 +38,14 @@ class Address extends IP\Address
 		{
 			$tmp = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
 			if ($tmp === FALSE)
-				throw new \InvalidArgumentException("'$address' is not a valid IPv4 Address");
+				throw new InvalidArgumentException("'$address' is not a valid IPv4 Address");
 
 			$address = static::_pack(ip2long($address));
 		}
-		elseif ($address instanceOf \Math_BigInteger)
+		elseif ($address instanceOf Math_BigInteger)
 		{
-			if ($address->compare(new \Math_BigInteger(pack('N', ip2long(static::MAX_IP)), 256)) > 0)
-				throw new \InvalidArgumentException("IP value out of range.");
+			if ($address->compare(new Math_BigInteger(pack('N', ip2long(static::MAX_IP)), 256)) > 0)
+				throw new InvalidArgumentException("IP value out of range.");
 
 			$address = str_pad($address->toBytes(), 4, chr(0), STR_PAD_LEFT);
 		}
@@ -52,7 +55,7 @@ class Address extends IP\Address
 		}
 		else
 		{
-			throw new \InvalidArgumentException("Unsupported argument type.");
+			throw new InvalidArgumentException("Unsupported argument type.");
 		}
 
 		return new IPv4\Address($address);
@@ -74,18 +77,18 @@ class Address extends IP\Address
 		return $out[1];
 	}
 
-	public function add($value)
+	public function add(int|Math_BigInteger $value): IP\Address
 	{
-		if ($value instanceof \Math_BigInteger)
+		if ($value instanceof Math_BigInteger)
 		{
 			$value = intval( (string) $value);
 		}
 		return new IPv4\Address(static::_pack(static::_unpack($this->address) + $value));
 	}
 
-	public function subtract($value)
+	public function subtract(int|Math_BigInteger $value): IP\Address
 	{
-		if ($value instanceof \Math_BigInteger)
+		if ($value instanceof Math_BigInteger)
 		{
 			$value = intval( (string) $value);
 		}
@@ -94,10 +97,8 @@ class Address extends IP\Address
 
 	/**
 	  * Calculates the Bitwise & (AND) of a given IP address.
-	  * @param IPv4Address $other is the ip to be compared against
-	  * @return IPAddress
 	  */
-	public function bitwise_and(IP\Address $other)
+	  public function bitwise_and(IP\Address $other): IP\Address
 	{
 		$this->check_types($other);
 		return new IPv4\Address($this->address & $other->address);
@@ -105,10 +106,8 @@ class Address extends IP\Address
 
 	/**
 	  * Calculates the Bitwise | (OR) of a given IP address.
-	  * @param IPv4Address $other is the ip to be compared against
-	  * @return IPAddress
 	  */
-	public function bitwise_or(IP\Address $other)
+	  public function bitwise_or(IP\Address $other): IP\Address
 	{
 		$this->check_types($other);
 		return new IPv4\Address($this->address | $other->address);
@@ -116,31 +115,25 @@ class Address extends IP\Address
 
 	/**
 	  * Calculates the Bitwise ^ (XOR) of a given IP address.
-	  * @param IPv4\Address $other is the ip to be compared against
-	  * @return IP\Address
 	  */
-	public function bitwise_xor(IP\Address $other)
+	  public function bitwise_xor(IP\Address $other): IP\Address
 	{
 		$this->check_types($other);
 		return new IPv4\Address($this->address ^ $other->address);
 	}
 
 	/**
-	  * Calculates the Bitwise ~ (NOT) of a given IP address.
-	  * @param IPv4Address $other is the ip to be compared against
-	  * @return IP\Address
+	  * Calculates the Bitwise ~ (NOT)
 	  */
-	public function bitwise_not()
+	  public function bitwise_not(): IP\Address
 	{
 		return new IPv4\Address(~ $this->address);
 	}
 
 	/**
 	 * Creates a IPv6 address object representing the 'IPv4-Mapped' IPv6 address of this object
-	 *
-	 * @return IPv6\Address
 	 */
-	public function as_IPv6_address()
+	public function as_IPv6_address(): IPv6\Address
 	{
 		list( , $address) = unpack('H*', $this->address);
 		$address = join(':', str_split($address, 4));
@@ -149,7 +142,7 @@ class Address extends IP\Address
 		return IPv6\Address::factory($address);
 	}
 
-	public function compare_to(IP\Address $other)
+	public function compare_to(IP\Address $other): int
 	{
 		$this->check_types($other);
 
@@ -161,7 +154,7 @@ class Address extends IP\Address
 			return 0;
 	}
 
-	public function format($mode)
+	public function format($mode): string
 	{
 		$address = static::_unpack($this->address);
 		switch ($mode) {
@@ -176,7 +169,7 @@ class Address extends IP\Address
 				}
 				return implode('.', $parts);
 			default:
-				throw new \InvalidArgumentException('Unsupported format mode: '.$mode);
+				throw new InvalidArgumentException('Unsupported format mode: '.$mode);
 		}
 	}
 

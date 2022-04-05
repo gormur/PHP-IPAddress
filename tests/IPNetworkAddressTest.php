@@ -1,52 +1,42 @@
 <?php
-use Leth\IPAddress\IP, Leth\IPAddress\IPv4, Leth\IPAddress\IPv6;
+use Leth\IPAddress\IP;
+use Leth\IPAddress\IPv4;
+use Leth\IPAddress\IPv6;
+use Leth\IPAddress\IP\NetworkAddress;
 use PHPUnit\Framework\TestCase;
 
-class IP_Address_Tester extends IP\Address
-{
-	public function __construct() {}
+// class IP_Address_Tester extends IP\Address
+// {
+// 	public function __construct() {}
 
-	public function add($value) {}
-	public function subtract($value) {}
+// 	public function add(Math_BigInteger|int $value) : IP\Address {}
+// 	public function subtract($value) {}
 
-	public function bitwise_and(IP\Address $other) {}
-	public function bitwise_or(IP\Address $other) {}
-	public function bitwise_xor(IP\Address $other) {}
-	public function bitwise_not() {}
+// 	public function bitwise_and(IP\Address $other) {}
+// 	public function bitwise_or(IP\Address $other) {}
+// 	public function bitwise_xor(IP\Address $other) {}
+// 	public function bitwise_not() {}
 
-	public function format($mode) { return __CLASS__; }
-	public function compare_to(IP\Address $other) {}
-}
+// 	public function format($mode) { return __CLASS__; }
+// 	public function compare_to(IP\Address $other) {}
+// }
 
-class IP_NetworkAddress_Tester extends IP\NetworkAddress
-{
-	public function split($times = 1) {}
-}
 
 class IPv4_NetworkAddress_Tester extends IPv4\NetworkAddress
 {
-	public static function factory($address, $cidr = NULL)
+	public static function factory($address, $cidr = NULL): NetworkAddress
 	{
 		$ip = IPv4\Address::factory($address);
-		return new IPv4_NetworkAddress_Tester($ip, $cidr);
-	}
-
-	public function test_check_IP_version($other)
-	{
-		return $this->check_IP_version($other->address);
+		return new self($ip, $cidr);
 	}
 }
 
 class IPv6_NetworkAddress_Tester extends IPv6\NetworkAddress
 {
-	public static function factory($address, $cidr = NULL)
+	public static function factory($address, $cidr = NULL): NetworkAddress
 	{
 		$ip = IPv6\Address::factory($address);
-		return new IPv6_NetworkAddress_Tester($ip, $cidr);
-	}
-	public function test_check_IP_version($other)
-	{
-		return $this->check_IP_version($other->address);
+		return new self($ip, $cidr);
 	}
 }
 
@@ -60,20 +50,19 @@ class IP_NetworkAddress_Test extends TestCase
 {
 	public function providerFactory()
 	{
-		return array(
-			array('127.0.0.1/16', NULL, '127.0.0.1', 16, '127.0.0.0'),
-			array('127.0.0.1', 16, '127.0.0.1', 16, '127.0.0.0'),
-			array('127.0.0.1/32', NULL, '127.0.0.1', 32, '127.0.0.1'),
-			array('127.0.0.1', 32, '127.0.0.1', 32, '127.0.0.1'),
-			array(IP\NetworkAddress::factory('127.0.0.1/16'), NULL, '127.0.0.1', 16, '127.0.0.0'),
-			array(IP\NetworkAddress::factory('127.0.0.1/16'), 10, '127.0.0.1', 10, '127.0.0.0'),
+		$data = [];
+		$data[] = ['127.0.0.1/16', NULL, '127.0.0.1', 16, '127.0.0.0'];
+		$data[] = ['127.0.0.1', 16, '127.0.0.1', 16, '127.0.0.0'];
+		$data[] = ['127.0.0.1/32', NULL, '127.0.0.1', 32, '127.0.0.1'];
+		$data[] = ['127.0.0.1', 32, '127.0.0.1', 32, '127.0.0.1'];
+		$data[] = [IP\NetworkAddress::factory('127.0.0.1/16'), NULL, '127.0.0.1', 16, '127.0.0.0'];
+		$data[] = [IP\NetworkAddress::factory('127.0.0.1/16'), 10, '127.0.0.1', 10, '127.0.0.0'];
 
-			array('::1/16', NULL, '::1', 16, '::0'),
-			array('::1', 16, '::1', 16, '::0'),
-			array('::1/128', NULL, '::1', 128, '::1'),
-			array('::1', 128, '::1', 128, '::1'),
-
-		);
+		$data[] = ['::1/16', NULL, '::1', 16, '::0'];
+		$data[] = ['::1', 16, '::1', 16, '::0'];
+		$data[] = ['::1/128', NULL, '::1', 128, '::1'];
+		$data[] = ['::1', 128, '::1', 128, '::1'];
+		return $data;
 	}
 
 	/**
@@ -88,34 +77,37 @@ class IP_NetworkAddress_Test extends TestCase
 		$this->assertEquals($expected_subnet, (string) $ip->get_network_start());
 	}
 
-
-	public function providerFactoryThrowsException()
+	/**
+	 * What exactly does this test?
+	 * The historical provider created a "IP_Address_Tester"
+	 * that seemed just to be a mock, so we do that.
+	 */
+	public function testFactoryThrowsException1()
 	{
-		return array(
-			array(new IP_Address_Tester(), 1),
-			array(new IP_Address_Tester(), 3)
-		);
+		$this->expectException(InvalidArgumentException::class);
+		IP\NetworkAddress::factory($this->createMock(IP\Address::class), 1);
 	}
 
 	/**
-	 * @dataProvider providerFactoryThrowsException
+	 * See comment for testFactoryThrowsException1
 	 */
-	public function testFactoryThrowsException($address, $cidr)
+	public function testFactoryThrowsException3()
 	{
-		$this->expectException(\InvalidArgumentException::class);
-		IP\NetworkAddress::factory($address, $cidr);
+		$this->expectException(InvalidArgumentException::class);
+		$b = $this->createMock(IP\Address::class);
+		IP\NetworkAddress::factory($this->createMock(IP\Address::class), 3);
 	}
 
 	public function provideFactoryParseCIDR()
 	{
-		return array(
-			array('127.0.0.1/16', 24, 24),
-			array('127.0.0.1', NULL, 32),
-			array('127.0.0.1/24', NULL, 24),
-			array('::1', NULL, 128),
-			array('::1/58', 64, 64),
-			array('::1/58', NULL, 58),
-		);
+		$data = [];
+		$data[] = ['127.0.0.1/16', 24, 24];
+		$data[] = ['127.0.0.1', NULL, 32];
+		$data[] = ['127.0.0.1/24', NULL, 24];
+		$data[] = ['::1', NULL, 128];
+		$data[] = ['::1/58', 64, 64];
+		$data[] = ['::1/58', NULL, 58];
+		return $data;
 	}
 
 	/**
@@ -127,40 +119,34 @@ class IP_NetworkAddress_Test extends TestCase
 		$this->assertEquals($expected, $network->get_cidr());
 	}
 
-	public function providerUnimplementedException()
+	/**
+	 * Why is it bad to have this method?
+	 */
+	public function testUnimplementedException_generate_subnet_mask()
 	{
-		return array(
-			array('IP_NetworkAddress_Tester', 'generate_subnet_mask'),
-			array('IP_NetworkAddress_Tester', 'get_global_netmask'),
-		);
+		$this->assertFalse(method_exists(IP\NetworkAddress::class, 'generate_subnet_mask'));
 	}
 
 	/**
-	 * @dataProvider providerUnimplementedException
+	 * Why is it bad to have this method?
 	 */
-	public function testUnimplementedException($class, $method)
+	public function testUnimplementedException_get_global_netmask()
 	{
-		$this->expectException(\LogicException::class);
-		$class::$method(NULL);
+		$this->assertFalse(method_exists(IP\NetworkAddress::class, 'get_global_netmask'));
 	}
 
+	/**
+	 * @TODO add more addresses and v6 addresses
+	 */
 	public function providerCompare()
 	{
-		$data = array(
-			array('0.0.0.0/16', '0.0.0.0/16', 0),
-			array('0.0.0.0/16', '0.0.0.1/16', -1),
-			array('0.0.0.1/16', '0.0.0.0/16', 1),
-			array('127.0.0.1/16' , '127.0.0.1/16', 0),
-			array('127.0.10.1/16', '127.0.2.1/16', 1),
-			array('127.0.2.1/16' , '127.0.10.1/16', -1),
-			// TODO add more addresses and v6 addresses
-		);
-		foreach ($data as &$d)
-		{
-			$d[0] = IP\NetworkAddress::factory($d[0]);
-			$d[1] = IP\NetworkAddress::factory($d[1]);
-		}
-
+		$data = [];
+		$data[] = [IP\NetworkAddress::factory('0.0.0.0/16'), IP\NetworkAddress::factory('0.0.0.0/16'), 0];
+		$data[] = [IP\NetworkAddress::factory('0.0.0.0/16'), IP\NetworkAddress::factory('0.0.0.1/16'), -1];
+		$data[] = [IP\NetworkAddress::factory('0.0.0.1/16'), IP\NetworkAddress::factory('0.0.0.0/16'), 1];
+		$data[] = [IP\NetworkAddress::factory('127.0.0.1/16') ,IP\NetworkAddress::factory( '127.0.0.1/16'), 0];
+		$data[] = [IP\NetworkAddress::factory('127.0.10.1/16'), IP\NetworkAddress::factory('127.0.2.1/16'), 1];
+		$data[] = [IP\NetworkAddress::factory('127.0.2.1/16') ,IP\NetworkAddress::factory( '127.0.10.1/16'), -1];
 		return $data;
 	}
 
@@ -179,37 +165,44 @@ class IP_NetworkAddress_Test extends TestCase
 
 	public function providerAddressInNetwork()
 	{
-		return array(
-			array(IP\NetworkAddress::factory('192.168.1.1/24'),  0, NULL, '192.168.1.0'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'),  1, NULL, '192.168.1.1'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'),  2, NULL, '192.168.1.2'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'),  0, FALSE, '192.168.1.255'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'), -1, NULL, '192.168.1.254'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'), -2, NULL, '192.168.1.253'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'), -3, NULL, '192.168.1.252'),
+		$data = [];
+		//                                    network           index, from, expected
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'),  0, NULL, '192.168.1.0'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'),  1, NULL, '192.168.1.1'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'),  2, NULL, '192.168.1.2'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'),  0, FALSE, '192.168.1.255'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'), -1, NULL, '192.168.1.254'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'), -2, NULL, '192.168.1.253'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'), -3, NULL, '192.168.1.252'];
 
-			array(IP\NetworkAddress::factory('192.168.1.1/24'),  0, NULL, '192.168.1.0'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'),  1, NULL, '192.168.1.1'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'),  0, FALSE, '192.168.1.255'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'), -1, NULL, '192.168.1.254'),
-			array(IP\NetworkAddress::factory('192.168.1.1/24'), -2, NULL, '192.168.1.253'),
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'),  0, NULL, '192.168.1.0'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'),  1, NULL, '192.168.1.1'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'),  0, FALSE, '192.168.1.255'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'), -1, NULL, '192.168.1.254'];
+		$data[] = [IP\NetworkAddress::factory('192.168.1.1/24'), -2, NULL, '192.168.1.253'];
 
-			array(IP\NetworkAddress::factory('10.13.1.254/24'), 0, NULL, '10.13.1.0'),
-			array(IP\NetworkAddress::factory('10.13.1.254/24'), 1, NULL, '10.13.1.1'),
-			array(IP\NetworkAddress::factory('10.13.1.254/24'), 0, FALSE, '10.13.1.255'),
-			array(IP\NetworkAddress::factory('10.13.1.254/24'), -1, NULL, '10.13.1.254'),
+		$data[] = [IP\NetworkAddress::factory('10.13.1.254/24'), 0, NULL, '10.13.1.0'];
+		$data[] = [IP\NetworkAddress::factory('10.13.1.254/24'), 1, NULL, '10.13.1.1'];
+		$data[] = [IP\NetworkAddress::factory('10.13.1.254/24'), 0, FALSE, '10.13.1.255'];
+		$data[] = [IP\NetworkAddress::factory('10.13.1.254/24'), -1, NULL, '10.13.1.254'];
 
-			array(IP\NetworkAddress::factory('10.13.1.254/24'), new \Math_BigInteger( 0), NULL, '10.13.1.0'),
-			array(IP\NetworkAddress::factory('10.13.1.254/24'), new \Math_BigInteger( 1), NULL, '10.13.1.1'),
-			array(IP\NetworkAddress::factory('10.13.1.254/24'), new \Math_BigInteger( 0), FALSE, '10.13.1.255'),
-			array(IP\NetworkAddress::factory('10.13.1.254/24'), new \Math_BigInteger(-1), NULL, '10.13.1.254'),
-		);
+		$data[] = [IP\NetworkAddress::factory('10.13.1.254/24'), new Math_BigInteger( 0), NULL, '10.13.1.0'];
+		$data[] = [IP\NetworkAddress::factory('10.13.1.254/24'), new Math_BigInteger( 1), NULL, '10.13.1.1'];
+		$data[] = [IP\NetworkAddress::factory('10.13.1.254/24'), new Math_BigInteger( 0), FALSE, '10.13.1.255'];
+		$data[] = [IP\NetworkAddress::factory('10.13.1.254/24'), new Math_BigInteger(-1), NULL, '10.13.1.254'];
+
+		return $data;
 	}
 
 	/**
 	 * @dataProvider providerAddressInNetwork
 	 */
-	public function testAddressInNetwork($network, $index, $from_start, $expected)
+	public function testAddressInNetwork(
+		IP\NetworkAddress $network,
+		int|Math_BigInteger $index,
+		?bool $from_start,
+		string $expected
+	)
 	{
 		$address = $network->get_address_in_network($index, $from_start);
 		$this->assertEquals($expected, (string) $address);
@@ -217,30 +210,31 @@ class IP_NetworkAddress_Test extends TestCase
 
 	public function providerCheck_IP_version()
 	{
-		return array(
-			array(
-				IPv4_NetworkAddress_Tester::factory('10.1.0.0', 24),
-				IPv4_NetworkAddress_Tester::factory('10.2.0.0', 24),
-				IPv6_NetworkAddress_Tester::factory('::1', 24),
-				IPv6_NetworkAddress_Tester::factory('1::1', 24)
-			)
-		);
+		return [
+		];
 	}
 
 	public function providerCheck_IP_version_fail()
 	{
-		list(list($a4, $b4, $a6, $b6)) = $this->providerCheck_IP_version();
-		return array(
-			array($a4, $a6),
-			array($a4, $b6),
-			array($a6, $a4),
-			array($a6, $b4),
+		$a4 = IPv4_NetworkAddress_Tester::factory('10.1.0.0', 24);
+		$b4 = IPv4_NetworkAddress_Tester::factory('10.2.0.0', 24);
 
-			array($b4, $a6),
-			array($b4, $b6),
-			array($b6, $a4),
-			array($b6, $b4),
-		);
+		$a6 = IPv6_NetworkAddress_Tester::factory('::1', 24);
+		$b6 = IPv6_NetworkAddress_Tester::factory('1::1', 24);
+
+		$data = [];
+
+		$data[] = [$a4, $a6];
+		$data[] = [$a4, $b6];
+		$data[] = [$a6, $a4];
+		$data[] = [$a6, $b4];
+
+		$data[] = [$b4, $a6];
+		$data[] = [$b4, $b6];
+		$data[] = [$b6, $a4];
+		$data[] = [$b6, $b4];
+
+		return $data;
 	}
 
 	/**
@@ -248,35 +242,38 @@ class IP_NetworkAddress_Test extends TestCase
 	 */
 	public function test_check_IP_version_fail($left, $right)
 	{
-		$this->expectException(\InvalidArgumentException::class);
-		$left->test_check_IP_version($right);
+		$this->assertFalse($left->is_same_version($right));
 	}
 
-	/**
-	 * @dataProvider providerCheck_IP_version
-	 */
-	public function test_check_IP_version($a4, $b4, $a6, $b6)
+	public function test_is_same_version4()
 	{
-		$a4->test_check_IP_version($b4);
-		$b4->test_check_IP_version($a4);
+		$sut = IPv4\NetworkAddress::factory('10.1.0.0', 24);
+		$other = IPv4\NetworkAddress::factory('10.2.0.0', 24);
+		$this->assertTrue($sut->is_same_version($other));
+		$this->assertTrue($other->is_same_version($sut));
+	}
 
-		$a6->test_check_IP_version($b6);
-		$b6->test_check_IP_version($a6);
+	public function test_is_same_version6()
+	{
+		$sut = IPv4\NetworkAddress::factory('10.1.0.0', 24);
+		$other = IPv4\NetworkAddress::factory('10.2.0.0', 24);
+		$this->assertTrue($sut->is_same_version($other));
+		$this->assertTrue($other->is_same_version($sut));
 	}
 
 	public function providerSubnets()
 	{
-		$data = array(
-			array('2000::/3','2001:630:d0:f104::80a/128', true, true),
-			array('2000::/3','2001:630:d0:f104::80a/96', true, true),
-			array('2000::/3','2001:630:d0:f104::80a/48', true, true),
+		$data = [
+			['2000::/3','2001:630:d0:f104::80a/128', true, true],
+			['2000::/3','2001:630:d0:f104::80a/96', true, true],
+			['2000::/3','2001:630:d0:f104::80a/48', true, true],
 
-			array('2001:630:d0:f104::80a/96', '2000::/3', true, false),
-			array('2001:630:d0:f104::80a/48', '2000::/3', true, false),
+			['2001:630:d0:f104::80a/96', '2000::/3', true, false],
+			['2001:630:d0:f104::80a/48', '2000::/3', true, false],
 
-			array('2000::/3','4000::/3', false, false),
-			array('2000::/3','1000::/3', false, false),
-		);
+			['2000::/3','4000::/3', false, false],
+			['2000::/3','1000::/3', false, false],
+		];
 
 		foreach ($data as &$d)
 		{
@@ -298,17 +295,17 @@ class IP_NetworkAddress_Test extends TestCase
 
 	public function providerEnclosesAddress()
 	{
-		$data = array(
-			array('2000::/3','2001:630:d0:f104::80a', true),
-			array('2000::/3','2001:630:d0:f104::80a', true),
-			array('2000::/3','2001:630:d0:f104::80a', true),
+		$data = [
+			['2000::/3','2001:630:d0:f104::80a', true],
+			['2000::/3','2001:630:d0:f104::80a', true],
+			['2000::/3','2001:630:d0:f104::80a', true],
 
-			array('2001:630:d0:f104::80a/96', '2000::', false),
-			array('2001:630:d0:f104::80a/48', '2000::', false),
+			['2001:630:d0:f104::80a/96', '2000::', false],
+			['2001:630:d0:f104::80a/48', '2000::', false],
 
-			array('2000::/3','4000::', false),
-			array('2000::/3','1000::', false),
-		);
+			['2000::/3','4000::', false],
+			['2000::/3','1000::', false],
+		];
 
 		foreach ($data as &$d)
 		{
@@ -329,19 +326,10 @@ class IP_NetworkAddress_Test extends TestCase
 
 	public function provideNetworkIdentifiers()
 	{
-		$data = array(
-			array('2000::/3', true),
-			array('2000::1/3', false),
-
-			array('2000::/3', true),
-			array('2000::1/3', false),
-		);
-
-		foreach ($data as &$d)
-		{
-			$d[0] = IP\NetworkAddress::factory($d[0]);
-		}
-		return $data;
+		return [
+			[IP\NetworkAddress::factory('2000::/3'), true],
+			[IP\NetworkAddress::factory('2000::1/3'), false],
+		];
 	}
 
 	/**
@@ -364,45 +352,68 @@ class IP_NetworkAddress_Test extends TestCase
 
 	public function providerExcluding()
 	{
-		$data = array(
-			array('192.168.0.0/24',
-				array(),
-				array('192.168.0.0/24')),
-			array('192.168.0.0/24',
-				array('192.168.0.0/25'),
-				array('192.168.0.128/25')),
-			array('192.168.0.0/24',
-				array('192.168.0.64/26', '192.168.0.128/26'),
-				array('192.168.0.0/26', '192.168.0.192/26')),
-			array('192.168.0.0/24',
-				array('192.168.0.0/26'),
-				array('192.168.0.64/26', '192.168.0.128/25')),
-			array('192.168.0.0/24',
-				array('192.168.0.0/27'),
-				array('192.168.0.32/27', '192.168.0.64/26', '192.168.0.128/25')),
-			// Test out of range exclusions
-			array('192.168.0.0/24',
-				array('10.0.0.0/24'),
-				array('192.168.0.0/24')),
-			array('192.168.0.0/24',
-				array('10.0.0.0/24', '192.168.0.0/25'),
-				array('192.168.0.128/25')),
-			// Test an encompassing subnet
-			array('192.168.0.0/24',
-				array('192.168.0.0/23'),
-				array()),
-		);
-		foreach ($data as  &$d)
-		{
-			$d[0] = IP\NetworkAddress::factory($d[0]);
-			for ($i=1; $i < count($d); $i++)
-			{
-				foreach ($d[$i] as &$e)
-				{
-					$e = IP\NetworkAddress::factory($e);
-				}
-			}
-		}
+		$data = [];
+		$data[] = [
+			IP\NetworkAddress::factory('192.168.0.0/24'),
+			[],
+			[IP\NetworkAddress::factory('192.168.0.0/24'),]
+		];
+		$data[] = [
+			IP\NetworkAddress::factory('192.168.0.0/24'),
+			[IP\NetworkAddress::factory('192.168.0.0/25'),],
+			[IP\NetworkAddress::factory('192.168.0.128/25'),],
+		];
+		$data[] = [
+			IP\NetworkAddress::factory('192.168.0.0/24'),
+			[
+				IP\NetworkAddress::factory('192.168.0.64/26'),
+				IP\NetworkAddress::factory('192.168.0.128/26'),
+			],
+			[
+				IP\NetworkAddress::factory('192.168.0.0/26'),
+				IP\NetworkAddress::factory('192.168.0.192/26'),
+			]
+		];
+		$data[] = [
+			IP\NetworkAddress::factory('192.168.0.0/24'),
+			[IP\NetworkAddress::factory('192.168.0.0/26'),],
+			[
+				IP\NetworkAddress::factory('192.168.0.64/26'),
+				IP\NetworkAddress::factory('192.168.0.128/25'),
+			]
+		];
+		$data[] = [
+			IP\NetworkAddress::factory('192.168.0.0/24'),
+			[IP\NetworkAddress::factory('192.168.0.0/27'),],
+			[
+				IP\NetworkAddress::factory('192.168.0.32/27'),
+				IP\NetworkAddress::factory('192.168.0.64/26'),
+				IP\NetworkAddress::factory('192.168.0.128/25'),
+			]
+		];
+
+		// Test out of range exclusions
+		$data[] = [
+			IP\NetworkAddress::factory('192.168.0.0/24'),
+			[IP\NetworkAddress::factory('10.0.0.0/24'),],
+			[IP\NetworkAddress::factory('192.168.0.0/24'),]
+		];
+		$data[] = [
+			IP\NetworkAddress::factory('192.168.0.0/24'),
+			[
+				IP\NetworkAddress::factory('10.0.0.0/24'),
+				IP\NetworkAddress::factory('192.168.0.0/25'),
+			],
+			[IP\NetworkAddress::factory('192.168.0.128/25'),]
+		];
+
+		// Test an encompassing subnet
+		$data[] = [
+			IP\NetworkAddress::factory('192.168.0.0/24'),
+			[IP\NetworkAddress::factory('192.168.0.0/23'),],
+			[]
+		];
+
 		return $data;
 	}
 
@@ -416,78 +427,80 @@ class IP_NetworkAddress_Test extends TestCase
 
 	public function provideMerge()
 	{
-		$data = array(
+		$data = [];
 			// Simple merge
-			array(
-				array('0.0.0.0/32', '0.0.0.1/32'),
-				array('0.0.0.0/31'),
-			),
-			// No merge
-			array(
-				array('0.0.0.1/32'),
-				array('0.0.0.1/32'),
-			),
-			array(
-				array('0.0.0.0/32', '0.0.0.2/32'),
-				array('0.0.0.0/32', '0.0.0.2/32'),
-			),
-			// Duplicate entries
-			array(
-				array('0.0.0.0/32', '0.0.0.1/32', '0.0.0.1/32'),
-				array('0.0.0.0/31'),
-			),
-			array(
-				array('0.0.0.0/32', '0.0.0.0/32', '0.0.0.1/32'),
-				array('0.0.0.0/31'),
-			),
-			array(
-				array('0.0.0.0/32', '0.0.0.0/32', '0.0.0.1/32', '0.0.0.1/32'),
-				array('0.0.0.0/31'),
-			),
-			// Single merge with remainder
-			array(
-				array('0.0.0.0/32', '0.0.0.1/32', '0.0.0.2/32'),
-				array('0.0.0.2/32', '0.0.0.0/31'),
-			),
-			// Double merge
-			array(
-				array('0.0.0.0/32', '0.0.0.1/32', '0.0.0.2/31'),
-				array('0.0.0.0/30'),
-			),
-			// Non-network identifier
-			array(
-				array('0.0.0.0/31', '0.0.0.3/31'),
-				array('0.0.0.0/30'),
-			),
-			// IPv6 merges
-			array(
-				array('::0/128', '::1/128'),
-				array('::0/127'),
-			),
-			array(
-				array('::0/128', '::1/128', '::2/127'),
-				array('::0/126'),
-			),
-			// Mixed subnets
-			array(
-				array('0.0.0.0/32', '0.0.0.1/32', '::0/128', '::1/128'),
-				array('0.0.0.0/31', '::0/127'),
-			),
-			// Merge with duplicate resultant entry
-			array(
-				array('0.0.0.0/22', '0.0.0.0/24', '0.0.1.0/24', '0.0.2.0/24', '0.0.3.0/24'),
-				array('0.0.0.0/22'),
-			),
-		);
+		$data[] = [
+			['0.0.0.0/32', '0.0.0.1/32'],
+			['0.0.0.0/31']
+		];
+		// No merge
+		$data[] = [
+			['0.0.0.1/32'],
+			['0.0.0.1/32']
+		];
+		$data[] = [
+			['0.0.0.0/32', '0.0.0.2/32'],
+			['0.0.0.0/32', '0.0.0.2/32']
+		];
+		// Duplicate entries
+		$data[] = [
+			['0.0.0.0/32', '0.0.0.1/32', '0.0.0.1/32'],
+			['0.0.0.0/31']
+		];
+		$data[] = [
+			['0.0.0.0/32', '0.0.0.0/32', '0.0.0.1/32'],
+			['0.0.0.0/31']
+		];
+		$data[] = [
+			['0.0.0.0/32', '0.0.0.0/32', '0.0.0.1/32', '0.0.0.1/32'],
+			['0.0.0.0/31']
+		];
+		// Single merge with remainder
+		$data[] = [
+			['0.0.0.0/32', '0.0.0.1/32', '0.0.0.2/32'],
+			['0.0.0.2/32', '0.0.0.0/31']
+		];
+		// Double merge
+		$data[] = [
+			['0.0.0.0/32', '0.0.0.1/32', '0.0.0.2/31'],
+			['0.0.0.0/30']
+		];
+		// Non-network identifier
+		$data[] = [
+			['0.0.0.0/31', '0.0.0.3/31'],
+			['0.0.0.0/30']
+		];
+		// IPv6 merges
+		$data[] = [
+			['::0/128', '::1/128'],
+			['::0/127']
+		];
+		[
+			['::0/128', '::1/128', '::2/127'],
+			['::0/126']
+		];
+		// Mixed subnets
+		$data[] = [
+			['0.0.0.0/32', '0.0.0.1/32', '::0/128', '::1/128'],
+			['0.0.0.0/31', '::0/127']
+		];
+		// Merge with duplicate resultant entry
+		$data[] = [
+			['0.0.0.0/22', '0.0.0.0/24', '0.0.1.0/24', '0.0.2.0/24', '0.0.3.0/24'],
+			['0.0.0.0/22']
+		];
 
 		foreach ($data as &$x)
 		{
-			foreach ($x as &$y)
+			//Int addrs
+			foreach ($x[0] as &$addr)
 			{
-				foreach ($y as &$addr)
-				{
-					$addr = IP\NetworkAddress::factory($addr);
-				}
+				$addr = IP\NetworkAddress::factory($addr);
+			}
+			//Expected
+			foreach ($x[1] as &$addr)
+			{
+				$addr = IP\NetworkAddress::factory($addr);
 			}
 		}
 		return $data;

@@ -17,7 +17,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 namespace Leth\IPAddress\IP;
-use \Leth\IPAddress\IP, \Leth\IPAddress\IPv4, \Leth\IPAddress\IPv6;
+
+use Exception;
+use InvalidArgumentException;
+use Math_BigInteger;
+use \Leth\IPAddress\IP;
+use \Leth\IPAddress\IPv4;
+use \Leth\IPAddress\IPv6;
 
 /**
  * An abstract representation of an IP Address in a given network
@@ -30,27 +36,14 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	const IP_VERSION = -1;
 	const MAX_SUBNET = -1;
 
-	/**
-	 * The IP Address
-	 *
-	 * @var IPAddress
-	 */
-	protected $address;
+	protected IP\Address $address;
 
-	/**
-	 * The CIDR number
-	 *
-	 * @var int
-	 */
-	protected $cidr;
+	protected int $cidr;
 
 	/**
 	 * Generates the subnet mask for a given CIDR
-	 *
-	 * @param int $cidr The CIDR number
-	 * @return IP\Address An IP address representing the mask.
 	 */
-	public static function generate_subnet_mask($cidr)
+	public static function generate_subnet_mask(int $cidr): IP\Address
 	{
 		throw new \LogicException(__METHOD__.' not implemented in subclass of '.__CLASS__);
 	}
@@ -58,10 +51,9 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	/**
 	 * Gets the Global subnet mask for this IP Protocol
 	 *
-	 * @return IP\Address An IP Address representing the mask.
 	 * @author Marcus Cobden
 	 */
-	public static function get_global_netmask()
+	public static function get_global_netmask(): IP\Address
 	{
 		throw new \LogicException(__METHOD__.' not implemented in subclass of '.__CLASS__);
 	}
@@ -69,11 +61,9 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	/**
 	 * Creates an IP\NetworkAddress for the supplied string
 	 *
-	 * @param string $address IP Network Address string.
-	 * @param string $cidr Optional CIDR number. If not supplied It is assumed to be part of the address string
-	 * @return IP\NetworkAddress
+	 * If CIDR number is not supplied It is assumed to be part of the address string
 	 */
-	public static function factory($address, $cidr = NULL)
+	public static function factory(string $address, string $cidr = NULL): IP\NetworkAddress
 	{
 		if ($address instanceof IP\NetworkAddress)
 		{
@@ -120,13 +110,9 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	 * Compare 2 IP Network Address objects.
 	 *
 	 * This method is a wrapper for the compare_to method and is useful in callback situations, e.g.
-	 * usort($addresses, array('IP\NetworkAddress', 'compare'));
-	 *
-	 * @param IP\Address $a The left hand side of the comparison.
-	 * @param IP\Address $b The right hand side of the comparison.
-	 * @return int The result of the comparison.
+	 * usort($addresses, ['IP\NetworkAddress', 'compare']);
 	 */
-	public static function compare(IP\NetworkAddress $a, IP\NetworkAddress $b)
+	public static function compare(IP\NetworkAddress $a, IP\NetworkAddress $b): int
 	{
 		return $a->compare_to($b);
 	}
@@ -136,12 +122,11 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	 *
 	 * Ajacent blocks can only be merged if they belong to the same parent block
 	 *
-	 * @param array NetworkAddresses to merge
-	 * @return array NetworkAddresses remaining after merging
+	 * Returns an array of NetworkAddresses remaining after merging
 	 */
-	public static function merge(array $network_addresses)
+	public static function merge(array $network_addresses): array
 	{
-		$net_addr_index = array();
+		$net_addr_index = [];
 		foreach ($network_addresses as $net_addr) {
 			// Ensure sure we're only dealing with network identifiers
 			$net_addr = $net_addr->get_network_identifier();
@@ -150,7 +135,7 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 		// We're done with this structure now
 		unset($network_addresses);
 
-		$out = array();
+		$out = [];
 		foreach ($net_addr_index as $version => $cidr_addrs)
 		{
 			$max = $version == 4 ? IPv4\NetworkAddress::MAX_SUBNET : IPv6\NetworkAddress::MAX_SUBNET;
@@ -167,7 +152,7 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 					continue;
 				}
 
-				usort($net_addrs, array('Leth\IPAddress\IP\NetworkAddress', 'compare'));
+				usort($net_addrs, ['Leth\IPAddress\IP\NetworkAddress', 'compare']);
 
 				$last_added = NULL;
 				for ($i = 0; $i < count($net_addrs) - 1; $i++) {
@@ -199,17 +184,16 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	/**
 	 * Construct an IP\NetworkAddress.
 	 *
-	 * @param IPAddress $address The IP Address of the host
 	 * @param string $cidr The CIDR size of the network
 	 */
-	protected function __construct(IP\Address $address, $cidr)
+	protected function __construct(IP\Address $address, int $cidr = null)
 	{
 		// Default CIDR equal single host
 		if ($cidr === NULL) {
 			$cidr = static::MAX_SUBNET;
 		}
-		if ( ! is_int($cidr) OR $cidr < 0 OR $cidr > static::MAX_SUBNET)
-			throw new \InvalidArgumentException("Invalid CIDR '.$cidr'.Invalid type or out of range for class ".get_class($this).".");
+		if ($cidr < 0 OR $cidr > static::MAX_SUBNET)
+			throw new \InvalidArgumentException("Invalid CIDR '.$cidr'. Out of range for class ".get_class($this).".");
 
 		$this->address = $address;
 		$this->cidr = $cidr;
@@ -227,10 +211,8 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 
 	/**
 	 * Get the NetworkAddress immediately enclosing this one
-	 *
-	 * @return IP\NetworkAddress
 	 */
-	public function get_parent()
+	public function get_parent(): IP\NetworkAddress
 	{
 		if ($this->cidr == 0)
 			return NULL;
@@ -241,43 +223,39 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 
 	/**
 	 * Calculates the first address in this subnet.
-	 *
-	 * @return IP\Address
 	 */
-	public function get_network_start()
+	public function get_network_start(): IP\Address
 	{
 		return $this->address->bitwise_and($this->get_subnet_mask());
 	}
 
 	/**
 	 * Calculates the last address in this subnet.
-	 *
-	 * @return IP\Address
 	 */
-	public function get_network_end()
+	public function get_network_end(): IP\Address
 	{
 		return $this->get_subnet_mask()->bitwise_not()->bitwise_or($this->address);
 	}
 
 	/**
 	 * Calculates the number of address in this subnet.
-	 *
-	 * @return integer
 	 */
-	public function get_NetworkAddress_count()
+	public function get_NetworkAddress_count(): int
 	{
 		return pow(2, static::MAX_SUBNET - $this->cidr);
 	}
 
-	public function get_address_in_network($offset, $from_start = NULL)
+
+
+	public function get_address_in_network(int|Math_BigInteger $offset, $from_start = NULL)
 	{
 		if (is_int($offset))
 		{
 			$positive = ($offset >= 0);
 		}
-		elseif ($offset instanceOf \Math_BigInteger)
+		elseif ($offset instanceOf Math_BigInteger)
 		{
-			$positive = ($offset->compare(new \Math_BigInteger(0)) >= 0);
+			$positive = ($offset->compare(new Math_BigInteger(0)) >= 0);
 		}
 		if ($from_start === NULL)
 		{
@@ -303,7 +281,7 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 			{
 				$offset = abs($offset);
 			}
-			elseif ($offset instanceOf \Math_BigInteger)
+			elseif ($offset instanceOf Math_BigInteger)
 			{
 				$offset = $offset->abs();
 			}
@@ -315,22 +293,19 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 			return $point->subtract($offset);
 	}
 
+
 	/**
 	 * Checks whether this is a Network Identifier
-	 *
-	 * @return boolean
 	 */
-	public function is_network_identifier()
+	public function is_network_identifier(): bool
 	{
 		return $this->address->compare_to($this->get_network_start()) == 0;
 	}
 
 	/**
 	 * Get the Network Identifier for the network this address is in.
-	 *
-	 * @return IP\NetworkAddress
 	 */
-	public function get_network_identifier()
+	public function get_network_identifier(): IP\NetworkAddress
 	{
 		$classname = get_class($this);
 		return new $classname($this->get_network_start(), $this->cidr);
@@ -338,10 +313,8 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 
 	/**
 	 * Get the subnet mask for this network
-	 *
-	 * @return IP\Address
 	 */
-	public function get_subnet_mask()
+	public function get_subnet_mask(): IP\Address
 	{
 		return static::generate_subnet_mask($this->cidr);
 	}
@@ -350,9 +323,8 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	 * Calculates whether two subnets share any portion of their address space.
 	 *
 	 * @param IP\Address $other The other subnet to compare to.
-	 * @return void
 	 */
-	public function shares_subnet_space(IP\NetworkAddress $other)
+	public function shares_subnet_space(IP\NetworkAddress $other): bool
 	{
 		$this->check_types($other);
 
@@ -360,7 +332,7 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 
 		if ($this->cidr > $other->cidr)
 		{
-			list($first, $other) = array($other, $first);
+			list($first, $other) = [$other, $first];
 		}
 
 		return
@@ -373,9 +345,8 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	 * Checks whether this subnet encloses the supplied subnet.
 	 *
 	 * @param IP\Address $other Subnet to test against.
-	 * @return boolean
 	 */
-	public function encloses_subnet(IP\NetworkAddress $other)
+	public function encloses_subnet(IP\NetworkAddress $other): bool
 	{
 		$this->check_types($other);
 
@@ -387,13 +358,12 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 
 	/**
 	 * Checks whether the supplied IP fits within this subnet.
-	 *
-	 * @param IP\Address $ip IP to test against.
-	 * @return boolean
 	 */
-	public function encloses_address(IP\Address $ip)
+	public function encloses_address(IP\Address $ip): bool
 	{
-		$this->check_IP_version($ip);
+		if (!$this->is_same_version($ip)) {
+			throw new InvalidArgumentException("Incompatible types ('" . get_class($this) . "' and '" . get_class($ip) . "').");
+		}
 
 		return
 			($this->get_network_start()->compare_to($ip) <= 0)
@@ -404,36 +374,23 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	/**
 	 * Check that this and the argument are of the same type.
 	 *
-	 * @param IP\NetworkAddress $other The object to check.
-	 * @return void
 	 * @throws \InvalidArgumentException If they are not of the same type.
 	 */
-	protected function check_types($other)
+	protected function check_types(IP\NetworkAddress $other): void
 	{
 		if (get_class($this) != get_class($other))
 			throw new \InvalidArgumentException('Incompatible types.');
 	}
 
-	/**
-	 * Check that this and the argument are of the same IP protocol version
-	 *
-	 * @param IP\Address $other
-	 * @return void
-	 * @throws \InvalidArgumentException If they are not of the same type.
-	 */
-	protected function check_IP_version(IP\Address $other)
+	public function is_same_version(IP\Address $other): bool
 	{
-		if ($other::IP_VERSION !== static::IP_VERSION)
-			throw new \InvalidArgumentException("Incompatible types ('".get_class($this)."' and '".get_class($other)."').");
+		return (bool)($other::IP_VERSION !== static::IP_VERSION);
 	}
 
 	/**
 	 * Compare this instance to another IP\NetworkAddress
-	 *
-	 * @param IP\NetworkAddress $other The instance to compare to
-	 * @return integer
 	 */
-	public function compare_to(IP\NetworkAddress $other)
+	public function compare_to(IP\NetworkAddress $other): int
 	{
 		$cmp = $this->address->compare_to($other->address);
 
@@ -447,8 +404,6 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 
 	/**
 	 * Provides a string representation of this object
-	 *
-	 * @return string
 	 */
 	public function __toString()
 	{
@@ -458,13 +413,12 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	/**
 	 * Find a block of a given size within the smallest network address among the blocks given
 	 *
-	 * @param array $blocks An array of network addresses to search in.
-	 * @param integer $block_size The desired network block size
-	 * @return array(IP\NetworkAddress found, IP\NetworkAddress within), or array(NULL, NULL) if none found.
+	 * @return array With two items: [(IP\NetworkAddress found, IP\NetworkAddress within).
+	 * @throws Exception if a block is not found
 	 */
-	public static function get_block_in_smallest($blocks, $block_size)
+	public static function get_block_in_smallest(array $blocks, int $block_size): array
 	{
-		$smallest = NULL;
+		$smallest = null;
 		$smallest_cidr = 0;
 
 		foreach ($blocks as $block)
@@ -472,7 +426,7 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 			$cidr = $block->get_cidr();
 			if ($cidr == $block_size)
 			{
-				return array($block, $block);
+				return [$block, $block];
 			}
 			elseif ($cidr > $block_size)
 			{
@@ -485,25 +439,29 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 			}
 		}
 
-		if ($smallest)
-			return array(static::factory($smallest, $block_size), $smallest);
-		else
-			return array(NULL, NULL);
+		if (isNull($smallest)) {
+			throw new Exception("Not found");
+		}
+
+		return [
+			static::factory($smallest, $block_size),
+			$smallest
+		];
 	}
+
 
 	/**
 	 * Find the portion of this network address block that does not overlap with the given blocks.
 	 *
-	 * @param array $used An array of network addresses to exclude, each of type IP\NetworkAddress
-	 * @return array
+	 * @param array of IP\NetworkAddress to exclude
 	 */
-	public function excluding($excluding)
+	public function excluding(array $excluding): array
 	{
-		$candidates = array($this);
+		$candidates = [$this];
 		foreach ($excluding as $exclude)
 		{
 			$stack = $candidates;
-			$candidates = array();
+			$candidates = [];
 
 			while ( ! empty($stack))
 			{
@@ -533,24 +491,21 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 
 	/**
 	 * Split the network address to create 2^n network addresses.
-	 *
-	 * @param int $times The number of times to split the network address
-	 * @return array
 	 */
-	public function split($times = 1)
+	public function split(int $times = 1): array
 	{
 		if (0 == $times)
-			return array($this);
+			return [$this];
 
 		$new_cidr = $this->cidr + $times;
 		$shift = static::MAX_SUBNET - $new_cidr;
 		if ($shift < 0)
 			throw new \InvalidArgumentException('Cannot split beyond smallest subnet size');
 
-		$one = new \Math_BigInteger(1);
+		$one = new Math_BigInteger(1);
 		$offset = $one->bitwise_leftShift($shift);
 
-		$out = array();
+		$out = [];
 		$pos = $this->address;
 		for ($i=0; $i < pow(2, $times); $i++)
 		{
@@ -575,9 +530,8 @@ abstract class NetworkAddress implements \IteratorAggregate, \Countable
 	 *
 	 * Warning: May use a lot of memory if used with large networks.
 	 *          Consider using an iterator and the count() method instead.
-	 * @return array
 	 */
-	public function toArray()
+	public function toArray(): array
 	{
 		return iterator_to_array($this, false);
 	}

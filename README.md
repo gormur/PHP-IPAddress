@@ -3,9 +3,11 @@
 A set of utility classes for working with IP addresses in PHP.
 Supports both IPv4 and IPv6 schemes.
 
+Fork to support PHP 8.1
+
 ### Requirements
 
-* PHP version 5.3.0 or greater.
+* PHP version 8.1 or greater.
 * The [PEAR](http://pear.php.net/) [Math_BigInteger](http://pear.php.net/package/Math_BigInteger/) class
 
   Required for add & subtract operations on IPv6 addresses, and finding IPs in IPv6 address blocks.
@@ -65,10 +67,10 @@ echo count($network);
 /**
  * Merge adjacent NetworkAddress blocks into larger blocks
  */
-$small = array(
+$small = [
 	IPv4\NetworkAddress::factory('192.168.0.0/24'),
 	IPv4\NetworkAddress::factory('192.168.1.0/24')
-);
+];
 $merged = IP\NetworkAddress::merge($small);
 // Prints '1'
 echo count($merged);

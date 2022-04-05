@@ -17,7 +17,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 namespace Leth\IPAddress\IPv6;
+
+use InvalidArgumentException;
 use \Leth\IPAddress\IP, \Leth\IPAddress\IPv6, \Leth\IPAddress\IPv4;
+use Math_BigInteger;
 
 class Address extends IP\Address
 {
@@ -27,7 +30,7 @@ class Address extends IP\Address
 	// format mapped v4 if possible, else compact
 	const FORMAT_MAY_MAPPED_COMPACT = 4;
 
-	public static function factory($address)
+	public static function factory(mixed $address): self
 	{
 		if ($address instanceof IPv6\Address)
 		{
@@ -41,13 +44,13 @@ class Address extends IP\Address
 			}
 			$address = inet_pton($address);
 		}
-		elseif ($address instanceOf \Math_BigInteger)
+		elseif ($address instanceOf Math_BigInteger)
 		{
 			// Do nothing
 		}
 		elseif (is_int($address))
 		{
-			$address = new \Math_BigInteger($address);
+			$address = new Math_BigInteger($address);
 		}
 		else
 		{
@@ -58,20 +61,17 @@ class Address extends IP\Address
 	}
 
 	/**
-	 * This makes an IPv6 address fully qualified. It replaces :: with appropriate 0000 blocks, and
-	 * pads out all dropped 0s
+	 * This makes an IPv6 address fully qualified and padded.
+	 * It replaces :: with appropriate 0000 blocks, and pads out all dropped 0s
 	 *
 	 * IE: 2001:630:d0:: becomes 2001:0630:00d0:0000:0000:0000:0000:0000
-	 *
-	 * @param string $address IPv6 address to be padded
-	 * @return string A fully padded string IPv6 address
 	 */
-	public static function pad($address)
+	public static function pad(string $address): string
 	{
 		$parts = explode(':', $address);
 		$count = count($parts);
 
-		$hextets = array();
+		$hextets = [];
 		foreach ($parts as $i => $part)
 		{
 			if (isset($part[3])) // not need pad
@@ -97,7 +97,7 @@ class Address extends IP\Address
 
 	protected function __construct($address)
 	{
-		if ($address instanceOf \Math_BigInteger)
+		if ($address instanceOf Math_BigInteger)
 		{
 			parent::__construct(str_pad($address->abs()->toBytes(), 16, chr(0), STR_PAD_LEFT));
 		}
@@ -115,62 +115,55 @@ class Address extends IP\Address
 	public function as_IPv4_address()
 	{
 		if(!$this->is_encoded_IPv4_address())
-			throw \InvalidArgumentException('Not an IPv4 Address encoded in an IPv6 Address');
+			throw new InvalidArgumentException('Not an IPv4 Address encoded in an IPv6 Address');
 		list(,$hex) = unpack('H*', $this->address);
 		$parts = array_map('hexdec', array_slice(str_split($hex, 2), 12));
 		$address = implode('.', $parts);
 		return IPv4\Address::factory($address);
 	}
 
-	public function add($value)
+	public function add(int|Math_BigInteger $value): IP\Address
 	{
-		$left = new \Math_BigInteger($this->address, 256);
-		$right = ($value instanceof \Math_BigInteger) ? $value : new \Math_BigInteger($value);
+		$left = new Math_BigInteger($this->address, 256);
+		$right = ($value instanceof Math_BigInteger) ? $value : new Math_BigInteger($value);
 		return new IPv6\Address($left->add($right));
 	}
 
-	public function subtract($value)
+	public function subtract(int|Math_BigInteger $value): IP\Address
 	{
-		$left = new \Math_BigInteger($this->address, 256);
-		$right = ($value instanceof \Math_BigInteger) ? $value : new \Math_BigInteger($value);
+		$left = new Math_BigInteger($this->address, 256);
+		$right = ($value instanceof Math_BigInteger) ? $value : new Math_BigInteger($value);
 		return new IPv6\Address($left->subtract($right));
 	}
 
 	/**
 	  * Calculates the Bitwise & (AND) of a given IP address.
-	  * @param IP\Address $other is the ip to be compared against
-	  * @return IP\Address
 	  */
-	public function bitwise_and(IP\Address $other)
+	  public function bitwise_and(IP\Address $other): IP\Address
 	{
 		return $this->bitwise_operation('&', $other);
 	}
 
 	/**
 	  * Calculates the Bitwise | (OR) of a given IP address.
-	  * @param IP\Address $other is the ip to be compared against
-	  * @return IP\Address
 	  */
-	public function bitwise_or(IP\Address $other)
+	  public function bitwise_or(IP\Address $other): IP\Address
 	{
 		return $this->bitwise_operation('|', $other);
 	}
 
 	/**
 	  * Calculates the Bitwise ^ (XOR) of a given IP address.
-	  * @param IP\Address $other is the ip to be compared against
-	  * @return IP\Address
 	  */
-	public function bitwise_xor(IP\Address $other)
+	public function bitwise_xor(IP\Address $other): IP\Address
 	{
 		return $this->bitwise_operation('^', $other);
 	}
 
 	/**
 	  * Calculates the Bitwise ~ (NOT) of a given IP address.
-	  * @return IP\Address
 	  */
-	public function bitwise_not()
+	public function bitwise_not(): IP\Address
 	{
 		return $this->bitwise_operation('~');
 	}
@@ -204,7 +197,7 @@ class Address extends IP\Address
 		return new IPv6\Address($result);
 	}
 
-	public function compare_to(IP\Address $other)
+	public function compare_to(IP\Address $other): int
 	{
 		$this->check_types($other);
 
@@ -216,7 +209,7 @@ class Address extends IP\Address
 			return 0;
 	}
 
-	public function format($mode)
+	public function format($mode): string
 	{
 		list(,$hex) = unpack('H*', $this->address);
 		$parts = str_split($hex, 4);
@@ -244,7 +237,7 @@ class Address extends IP\Address
 			case IPv6\Address::FORMAT_MAPPED_IPV4:
 				list($a, $b) = str_split($parts[6], 2);
 				list($c, $d) = str_split($parts[7], 2);
-				return '::ffff:' . implode('.', array(hexdec($a), hexdec($b), hexdec($c), hexdec($d)));
+				return '::ffff:' . implode('.', [hexdec($a), hexdec($b), hexdec($c), hexdec($d)]);
 				break;
 
 			case IP\Address::FORMAT_COMPACT:
@@ -261,7 +254,7 @@ class Address extends IP\Address
 							$zeros_pos = $i;
 						}
 						$zeros_count++;
-						
+
 						if ($zeros_count > $best_count)
 						{
 							$best_count = $zeros_count;
@@ -272,16 +265,16 @@ class Address extends IP\Address
 					{
 						$zeros_count = 0;
 						$zeros_pos = FALSE;
-						
+
 						$parts[$i] = ltrim($quad, '0');
 					}
 				}
 
-				
+
 				if ($best_pos !== FALSE)
 				{
-					$insert = array(NULL);
-					
+					$insert = [NULL];
+
 					if ($best_pos == 0 OR $best_pos + $best_count == 8)
 					{
 						$insert[] = NULL;
@@ -292,13 +285,13 @@ class Address extends IP\Address
 					}
 					array_splice($parts, $best_pos, $best_count, $insert);
 				}
-				
+
 				break;
 
 			default:
 				throw new \InvalidArgumentException('Unsupported format mode: '.$mode);
 		}
-		
+
 		return implode(':', $parts);
 	}
 
